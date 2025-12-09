@@ -180,7 +180,7 @@
             } else {
                 // console.log("Valid percents: ", valid_percents.length, valid_percents)
             }
-            document.querySelector("#out").innerHTML = "";
+            let strout = "";
             prevmap = possible_percents(percents, matct, slotct);
             // console.log(prevmap);
             valid_percents.forEach(pct => {
@@ -192,9 +192,12 @@
                 }
                 if (pct === 0) {
                     console.log(original_pct, delta_count(pct_trail));
-                    document.querySelector("#out").innerHTML += `<p>${original_pct} [${inp_hp + Math.trunc((original_pct * inp_hp) / 100)}]: ${stringify(delta_count(pct_trail))}</p>`;
+                    strout += `<p>${original_pct} [${inp_hp + Math.trunc((original_pct * inp_hp) / 100)}]: ${stringify(delta_count(pct_trail))}</p>`;
                 }
             });
+            if (strout.length == 0)
+                strout = "<p>Needs more Materia!</p>";
+            document.querySelector("#out").innerHTML = strout;
         }
     </script>
     <script async type="text/javascript" src="seven.js" onload="enable_update = true;"></script>
