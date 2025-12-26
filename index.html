@@ -28,8 +28,9 @@
 <body>
     <div>
         <p>Materia Slots: <input type="number" id="materia-slots" oninput="update()"></p>
+        <!-- <p>HP-MP mode: <input type="checkbox" name="checkbox-use-mp" id="checkbox-use-mp"></p> -->
     </div>
-    <table>
+    <table style="display: inline">
         <thead>
             <tr>
                 <th>HP%</th>
@@ -71,8 +72,50 @@
             </tr>
         </tbody>
     </table>
-    <div>
-        <p>HP: <input type="number" id="hp" oninput="update()"></p>
+    <table style="display: inline">
+        <thead>
+            <tr>
+                <th>MP%</th>
+                <th>Number of Materia</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>+50%</td>
+                <td><input type="number" id="materia-mp-p50" oninput="update()"></td>
+            </tr>
+            <tr>
+                <td>+40%</td>
+                <td><input type="number" id="materia-mp-p40" oninput="update()"></td>
+            </tr>
+            <tr>
+                <td>+30%</td>
+                <td><input type="number" id="materia-mp-p30" oninput="update()"></td>
+            </tr>
+            <tr>
+                <td>+20%</td>
+                <td><input type="number" id="materia-mp-p20" oninput="update()"></td>
+            </tr>
+            <tr>
+                <td>+15%</td>
+                <td><input type="number" id="materia-mp-p15" oninput="update()"></td>
+            </tr>
+            <tr>
+                <td>+10%</td>
+                <td><input type="number" id="materia-mp-p10" oninput="update()"></td>
+            </tr>
+            <tr>
+                <td>+5%</td>
+                <td><input type="number" id="materia-mp-p05" oninput="update()"></td>
+            </tr>
+            <tr>
+                <td>+2%</td>
+                <td><input type="number" id="materia-mp-p02" oninput="update()"></td>
+            </tr>
+        </tbody>
+    </table>
+    <div style="display: inline">
+        <p>HP: <input type="number" id="hp" oninput="update()"> MP: <input type="number" id="mp" oninput="update()"></p>
     </div>
     <button onclick="update()">Update</button>
     <div id="out"></div>
@@ -89,23 +132,37 @@
         PCT_ID_MAP.set(-5, "#materia-m05");
         PCT_ID_MAP.set(-10, "#materia-m10");
 
-        function compute_valid_percents(initHP) {
+        const PCT_ID_MAP_MP = new Map();
+        PCT_ID_MAP_MP.set(50, "#materia-mp-p50");
+        PCT_ID_MAP_MP.set(40, "#materia-mp-p40");
+        PCT_ID_MAP_MP.set(30, "#materia-mp-p30");
+        PCT_ID_MAP_MP.set(20, "#materia-mp-p20");
+        PCT_ID_MAP_MP.set(15, "#materia-mp-p15");
+        PCT_ID_MAP_MP.set(10, "#materia-mp-p10");
+        PCT_ID_MAP_MP.set(5, "#materia-mp-p05");
+        PCT_ID_MAP_MP.set(2, "#materia-mp-p02");
+
+        function compute_valid_percents(initHP, mp_mode) {
             let size = 100;
 
             let ptr = Module._malloc(size * 4);
             for (let i = 0; i < size; i++)
                 Module.HEAP32[(ptr >> 2) + i] = 0;
 
-            let numPercents = Module._computeValidPercents(ptr, size, initHP);
+            let numPercents = null;
+            if (mp_mode)
+                numPercents = Module._computeValidPercentsMP(ptr, size, initHP);
+            else
+                numPercents = Module._computeValidPercents(ptr, size, initHP);
             let outarr = new Array(numPercents);
-            for (let i = 0; i < numPercents; i++){
+            for (let i = 0; i < numPercents; i++) {
                 outarr[i] = Module.HEAP32[(ptr >> 2) + i];
             }
             Module._free(ptr);
             return outarr;
         }
 
-        function possible_percents(percents, matct, slotct) {
+        function possible_percents(percents, matct, slotct, is_mp) {
             let matctPtr = Module._malloc(matct.length * 4);
             matct.forEach((e, i) => Module.HEAP32[(matctPtr >> 2) + i] = e);
 
@@ -113,11 +170,10 @@
             for (let i = 0; i < 201; i++)
                 Module.HEAP32[(mapPtr >> 2) + i] = -2147483648;
 
-            Module._possiblePercents(mapPtr, matctPtr, slotct);
+            Module._possiblePercents(mapPtr, matctPtr, slotct, is_mp ? 1 : 0);
 
             let outmap = new Map();
             for (let i = 0; i < 201; i++) {
-                // console.log(i - 100, Module.HEAP32[(mapPtr >> 2) + i]);
                 if (Module.HEAP32[(mapPtr >> 2) + i] >= -100) {
                     outmap.set(i - 100, Module.HEAP32[(mapPtr >> 2) + i]);
                 }
@@ -150,16 +206,15 @@
             return out.substring(0, out.length - 2);
         }
 
-        function update() {
-            if (!enable_update) return;
+        function update_hp() {
             let inp_hp = parseInt(document.querySelector("#hp").value)
             if (!(3889 < inp_hp && inp_hp <= 9999)) {
-                document.querySelector("#out").innerHTML = `<p>HP must be between 3889 and 9999</p>`
+                document.querySelector("#out").innerHTML += `<p>HP must be between 3889 and 9999</p>`
                 return;
             }
             let slotct = parseInt(document.querySelector("#materia-slots").value);
             if (slotct < 1) {
-                document.querySelector("#out").innerHTML = `<p>Must have at least one materia slot</p>`
+                document.querySelector("#out").innerHTML += `<p>Must have at least one materia slot</p>`
                 return;
             }
             if (slotct > 16) slotct = 16;
@@ -173,16 +228,15 @@
                 if (this_matct > 16) this_matct = 16;
                 matct.push(this_matct);
             });
-            valid_percents = compute_valid_percents(inp_hp);
+            valid_percents = compute_valid_percents(inp_hp, false);
             if (valid_percents.length === 0) {
-                document.querySelector("#out").innerHTML = `<p>No possible percent values for this HP</p>`
+                document.querySelector("#out").innerHTML += `<p>No possible percent values for this HP</p>`
                 return;
             } else {
                 // console.log("Valid percents: ", valid_percents.length, valid_percents)
             }
             let strout = "";
-            prevmap = possible_percents(percents, matct, slotct);
-            // console.log(prevmap);
+            prevmap = possible_percents(percents, matct, slotct, false);
             valid_percents.forEach(pct => {
                 let original_pct = pct;
                 let pct_trail = Array();
@@ -197,11 +251,66 @@
             });
             if (strout.length == 0)
                 strout = "<p>Needs more Materia!</p>";
-            document.querySelector("#out").innerHTML = strout;
+            document.querySelector("#out").innerHTML += strout;
+        }
+
+        function update_mp() {
+            let inp_mp = parseInt(document.querySelector("#mp").value)
+            if (!(10 < inp_mp && inp_mp <= 999)) {
+                document.querySelector("#out").innerHTML += `<p>MP mode: HP must be between 10 and 999</p>`
+                return;
+            }
+            let slotct = parseInt(document.querySelector("#materia-slots").value) - 1;
+            if (slotct < 1) {
+                document.querySelector("#out").innerHTML += `<p>Must have at least one materia slot plus one slot for HP-MP</p>`
+                return;
+            }
+            if (slotct > 15) slotct = 15;
+            let percents = Array();
+            let matct = Array();
+            PCT_ID_MAP_MP.forEach((id, pct) => {
+                percents.push(pct);
+                let this_matct = parseInt(document.querySelector(id).value);
+                if (!Number.isInteger(this_matct)) this_matct = 0;
+                if (this_matct < 0) this_matct = 0;
+                if (this_matct > 16) this_matct = 16;
+                matct.push(this_matct);
+            });
+            valid_percents = compute_valid_percents(inp_mp, true);
+            if (valid_percents.length === 0) {
+                document.querySelector("#out").innerHTML += `<p>No possible percent values for this MP</p>`
+                return;
+            } else {
+                // console.log("Valid percents: ", valid_percents.length, valid_percents)
+            }
+            let strout = "";
+            prevmap = possible_percents(percents, matct, slotct, true);
+            valid_percents.forEach(pct => {
+                let original_pct = pct;
+                let pct_trail = Array();
+                while (Number.isInteger(prevmap.get(pct))) {
+                    pct_trail.push(pct);
+                    pct = prevmap.get(pct);
+                }
+                if (pct === 0) {
+                    console.log(original_pct, delta_count(pct_trail));
+                    strout += `<p>${original_pct} [${inp_mp + Math.trunc((original_pct * inp_mp) / 100)}]: ${stringify(delta_count(pct_trail))}</p>`;
+                }
+            });
+            if (strout.length == 0)
+                strout = "<p>Needs more Materia!</p>";
+            document.querySelector("#out").innerHTML += strout;
+        }
+
+        function update() {
+            if (!enable_update) return;
+            document.querySelector("#out").innerHTML = "HP:<br>";
+            update_hp();
+            document.querySelector("#out").innerHTML += "<br>MP:<br>";
+            update_mp();
         }
     </script>
     <script async type="text/javascript" src="seven.js" onload="enable_update = true;"></script>
-    <!-- <script type="type/javascript" src="./seven.js" onload="enable_update = true; update()"></script> -->
 </body>
 
 </html>

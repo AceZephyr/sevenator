@@ -1486,6 +1486,7 @@ var _malloc = Module['_malloc'] = makeInvalidEarlyAccess('_malloc');
 var _free = Module['_free'] = makeInvalidEarlyAccess('_free');
 var _possiblePercents = Module['_possiblePercents'] = makeInvalidEarlyAccess('_possiblePercents');
 var _computeValidPercents = Module['_computeValidPercents'] = makeInvalidEarlyAccess('_computeValidPercents');
+var _computeValidPercentsMP = Module['_computeValidPercentsMP'] = makeInvalidEarlyAccess('_computeValidPercentsMP');
 var _fflush = makeInvalidEarlyAccess('_fflush');
 var _strerror = makeInvalidEarlyAccess('_strerror');
 var _emscripten_stack_get_end = makeInvalidEarlyAccess('_emscripten_stack_get_end');
@@ -1499,8 +1500,9 @@ var _emscripten_stack_get_current = makeInvalidEarlyAccess('_emscripten_stack_ge
 function assignWasmExports(wasmExports) {
   Module['_malloc'] = _malloc = createExportWrapper('malloc', 1);
   Module['_free'] = _free = createExportWrapper('free', 1);
-  Module['_possiblePercents'] = _possiblePercents = createExportWrapper('possiblePercents', 3);
+  Module['_possiblePercents'] = _possiblePercents = createExportWrapper('possiblePercents', 4);
   Module['_computeValidPercents'] = _computeValidPercents = createExportWrapper('computeValidPercents', 3);
+  Module['_computeValidPercentsMP'] = _computeValidPercentsMP = createExportWrapper('computeValidPercentsMP', 3);
   _fflush = createExportWrapper('fflush', 1);
   _strerror = createExportWrapper('strerror', 1);
   _emscripten_stack_get_end = wasmExports['emscripten_stack_get_end'];
